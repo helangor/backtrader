@@ -4,6 +4,7 @@ import yfinance as yf
 import pandas as pd
 import os
 import os.path 
+import backtrader.analyzers as btanalyzers
 
 class TestStrategy(bt.Strategy):
     params = (
@@ -47,8 +48,6 @@ class TestStrategy(bt.Strategy):
         # 2. If order is buy/sell executed, report price executed
         if order.status in [order.Completed]: 
             if order.isbuy():
-
-                
                 self.buyprice = order.executed.price
                 self.buycomm = order.executed.comm
 
@@ -64,20 +63,16 @@ class TestStrategy(bt.Strategy):
             return
 
     def next(self):
-        # Log the closing prices of the series from the reference
-
         if self.order: # check if order is pending, if so, then break out
             return
                 
-        # since there is no order pending, are we in the market?    
-
-
+        # since there is no order pending, are we in the market?   
         if not self.position: # not in the market
             if self.dataclose[0] > self.sma[0]:
                 self.order = self.buy()           
-        else: # in the market
-            if self.dataclose[0] < self.sma[0]:
-                self.order = self.sell()
+        #else: # in the market
+        #    if self.dataclose[0] < self.sma[0]:
+        #        self.order = self.sell()
 
 class GetData:
     def __init__(self, ticker, start, interval):
@@ -99,31 +94,40 @@ class GetData:
 
 
 if __name__ == '__main__':
-    cerebro = bt.Cerebro()
+    
+    # Datan saaminen ja alkuparametrit
     data_loader = GetData('BTC-USD', '2022-01-01', '1d')
     df = data_loader.load()
-    data = bt.feeds.PandasData(dataname=df)
-    cerebro.adddata(data)
-
-    # Prosentti on prosentti käteisestä joka sijoitetaan. Jos 95% ja komissio 6% niin 101% eli ei ole rahaa ostaa.
-    cerebro.addsizer(bt.sizers.PercentSizer, percents=95) 
-
     aloitus_rahat = 10000
-    cerebro.broker.set_cash(aloitus_rahat)
-    # Set the commission - 1% ... divide by 100 to remove the %
-    cerebro.broker.setcommission(commission=0.02)
-    # Komissio + prosentti = kokonaiskulu. Jos menee yli 100% niin ei ole rahaa ostaa.
+    maperiods = [2, 10, 50, 100]
+    sixer = 50
+    commission = 0.002
+    result_list = []
 
-    maperiods = [1, 5]
+    for period in maperiods:             
+        data = bt.feeds.PandasData(dataname=df)
+        cerebro = bt.Cerebro()
+        cerebro.adddata(data)
 
-    cerebro.optstrategy(TestStrategy, maperiod=maperiods)
+        # Prosentti on prosentti käteisestä joka sijoitetaan. Jos 95% ja komissio 6% niin 101% eli ei ole rahaa ostaa.
+        cerebro.addsizer(bt.sizers.PercentSizer, percents=sixer) 
 
-    #cerebro.addstrategy(TestStrategy, maperiod=maperiod)
-    cerebro.run()
 
-    # Eli haluan tietää lopullisen arvon suhteessa alkupääomaan.
-    final_value = cerebro.broker.getvalue()
-    voitto_ratio = ((final_value / aloitus_rahat) - 1) * 100
-    print('Monta prosenttia muuttui: %.2f %%' % voitto_ratio)
-    # Plot the result
-    #cerebro.plot()
+        cerebro.broker.set_cash(aloitus_rahat)
+        cerebro.broker.setcommission(commission=commission)
+        # Komissio + prosentti = kokonaiskulu. Jos menee yli 100% niin ei ole rahaa ostaa.
+
+        cerebro.addstrategy(TestStrategy, maperiod=period)
+        results = cerebro.run()
+
+        # Eli haluan tietää lopullisen arvon suhteessa alkupääomaan.
+        voitto_ratio = ((cerebro.broker.getvalue() / aloitus_rahat) - 1) * 100
+        result_list.append((period, voitto_ratio))
+
+        # Plot the result
+        #cerebro.plot()
+        # Create a Cerebro entity
+        # Create a Data Feed
+
+    par_df = pd.DataFrame(result_list, columns = ['maperiod', 'return'])
+    print(par_df)

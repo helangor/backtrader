@@ -8,14 +8,15 @@ import backtrader.analyzers as btanalyzers
 
 class TestStrategy(bt.Strategy):
     params = (
-        ('maperiod',15), # Tuple of tuples containing any variable settings required by the strategy.
-        ('printlog',False), # Stop printing the log of the trading strategy
+        ('maperiod', 15),
+        ('printlog', False),
     )
 
     def log(self, txt, dt=None):
         ''' Logging function fot this strategy'''
-        dt = dt or self.datas[0].datetime.date(0)
-        print('%s, %s' % (dt.isoformat(), txt))
+        if self.params.printlog:
+            dt = dt or self.datas[0].datetime.date(0)
+            print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
         # Keep a reference to the "close" line in the data[0] dataseries
@@ -25,37 +26,40 @@ class TestStrategy(bt.Strategy):
         self.order = None
         self.buyprice = None
         self.buycomm = None
+        self.sellcount = 0
+        self.buycount = 0
 
-        print(f'Moving Average Period: {self.params.maperiod}')
-        # Add SimpleMovingAverage indicator for use in the trading strategy
-        self.sma = bt.indicators.SimpleMovingAverage( 
+        # Add a MovingAverageSimple indicator
+        self.sma = bt.indicators.SimpleMovingAverage(
             self.datas[0], period=self.params.maperiod)
 
-        # Indicators for the plotting show
-        bt.indicators.ExponentialMovingAverage(self.datas[0], period=25)
-        bt.indicators.WeightedMovingAverage(self.datas[0], period=25,
-                                            subplot=True)
-        bt.indicators.StochasticSlow(self.datas[0])
-        bt.indicators.MACDHisto(self.datas[0])
-        rsi = bt.indicators.RSI(self.datas[0])
-        bt.indicators.SmoothedMovingAverage(rsi, period=10)
-        bt.indicators.ATR(self.datas[0], plot=False)
-
     def notify_order(self, order):
-        # 1. If order is submitted/accepted, do nothing 
         if order.status in [order.Submitted, order.Accepted]:
+            # Buy/Sell order submitted/accepted to/by broker - Nothing to do
             return
-        # 2. If order is buy/sell executed, report price executed
-        if order.status in [order.Completed]: 
+
+        # Check if an order has been completed
+        # Attention: broker could reject order if not enough cash
+        if order.status in [order.Completed]:
             if order.isbuy():
+                self.buycount += 1
+                self.log(
+                    'BUY EXECUTED, Price: %.2f, Cost: %.2f, Comm %.2f' %
+                    (order.executed.price,
+                    order.executed.value,
+                    order.executed.comm))
+
                 self.buyprice = order.executed.price
                 self.buycomm = order.executed.comm
+            else:  # Sell
+                self.sellcount += 1
+                self.log('SELL EXECUTED, Price: %.2f, Cost: %.2f, Comm %.2f' %
+                        (order.executed.price,
+                        order.executed.value,
+                        order.executed.comm))
 
-            self.bar_executed = len(self) #when was trade executed
-        # 3. If order is canceled/margin/rejected, report order canceled
-        elif order.status in [order.Canceled, order.Margin, order.Rejected]:
-            self.log('Order Canceled/Margin/Rejected')
-            
+            self.bar_executed = len(self)
+
         self.order = None
 
     def notify_trade(self, trade):
@@ -63,16 +67,23 @@ class TestStrategy(bt.Strategy):
             return
 
     def next(self):
-        if self.order: # check if order is pending, if so, then break out
+        # Check if an order is pending ... if yes, we cannot send a 2nd one
+        if self.order:
             return
-                
-        # since there is no order pending, are we in the market?   
-        if not self.position: # not in the market
-            if self.dataclose[0] > self.sma[0]:
-                self.order = self.buy()           
-        #else: # in the market
-        #    if self.dataclose[0] < self.sma[0]:
-        #        self.order = self.sell()
+
+        # TODO: Koita kun sma kulmakerroin muuttuu riittävästi.
+        
+        #sma muuttaa suuntaa
+        sma_muuttuu_nousevaksi = self.sma[0] > self.sma[-1] and self.sma[-1] <= self.sma[-2]
+        sma_muuttuu_laskevaksi = self.sma[0] < self.sma[-1] and self.sma[-1] >= self.sma[-2]
+
+        # Positio tarkoittaa, että meillä on osakkeita hallussa
+        if not self.position:
+            if sma_muuttuu_nousevaksi:
+                self.order = self.buy()
+        if self.position:
+            if sma_muuttuu_laskevaksi:
+                self.order = self.sell()
 
 class GetData:
     def __init__(self, ticker, start, interval):
@@ -99,9 +110,9 @@ if __name__ == '__main__':
     data_loader = GetData('BTC-USD', '2022-01-01', '1d')
     df = data_loader.load()
     aloitus_rahat = 10000
-    maperiods = [2, 10, 50, 100]
-    sixer = 50
-    commission = 0.002
+    maperiods = [200]
+    sizer = 98
+    commission = 0.02
     result_list = []
 
     for period in maperiods:             
@@ -110,24 +121,23 @@ if __name__ == '__main__':
         cerebro.adddata(data)
 
         # Prosentti on prosentti käteisestä joka sijoitetaan. Jos 95% ja komissio 6% niin 101% eli ei ole rahaa ostaa.
-        cerebro.addsizer(bt.sizers.PercentSizer, percents=sixer) 
+        cerebro.addsizer(bt.sizers.PercentSizer, percents=sizer) 
 
 
         cerebro.broker.set_cash(aloitus_rahat)
         cerebro.broker.setcommission(commission=commission)
         # Komissio + prosentti = kokonaiskulu. Jos menee yli 100% niin ei ole rahaa ostaa.
 
-        cerebro.addstrategy(TestStrategy, maperiod=period)
-        results = cerebro.run()
+        cerebro.addstrategy(TestStrategy, maperiod=period, printlog=True)
+        cerebro.run()
 
         # Eli haluan tietää lopullisen arvon suhteessa alkupääomaan.
         voitto_ratio = ((cerebro.broker.getvalue() / aloitus_rahat) - 1) * 100
-        result_list.append((period, voitto_ratio))
-
+        result_list.append((period, voitto_ratio, cerebro.broker.getvalue(),cerebro.runstrats[0][0].sellcount, cerebro.runstrats[0][0].buycount))
         # Plot the result
         #cerebro.plot()
         # Create a Cerebro entity
         # Create a Data Feed
 
-    par_df = pd.DataFrame(result_list, columns = ['maperiod', 'return'])
+    par_df = pd.DataFrame(result_list, columns = ['maperiod', 'return', 'rahaa','sellcount', 'buycount'])
     print(par_df)

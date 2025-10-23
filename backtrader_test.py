@@ -8,7 +8,7 @@ from strategiat.sma_cross import SMACross
 if __name__ == '__main__':
     
     # Datan saaminen ja alkuparametrit
-    data_loader = GetData('BTC-USD', '2022-01-01', '1d')
+    data_loader = GetData('BTC-USD', '2018-01-01', '1d')
     df = data_loader.load()
     aloitus_rahat = 10000
     pslows = [50, 100, 150, 200, 250]
@@ -34,5 +34,8 @@ if __name__ == '__main__':
             result_list.append((pslow, psfast, voitto_ratio, cerebro.broker.getvalue(),cerebro.runstrats[0][0].sellcount, cerebro.runstrats[0][0].buycount))
             #cerebro.plot()
 
-    par_df = pd.DataFrame(result_list, columns = ['pslow', 'psfast', 'return', 'rahaa','sellcount', 'buycount'])
+    par_df = pd.DataFrame(result_list, columns=['pslow', 'psfast', 'return', 'rahaa', 'sellcount', 'buycount'])
+
+    # Sort by 'return'
+    par_df = par_df.sort_values(by='return', ascending=False)
     print(par_df)

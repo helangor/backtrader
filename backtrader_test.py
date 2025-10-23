@@ -65,16 +65,22 @@ class TestStrategy(bt.Strategy):
     def notify_trade(self, trade):
         if not trade.isclosed:
             return
+        
+    def laske_kulmakerroin(self, p1, p2):
+        # TODO: tarkista mikä olisi riittävän korkea kulmakerroin
+        return (p2/p1)
 
     def next(self):
         # Check if an order is pending ... if yes, we cannot send a 2nd one
         if self.order:
             return
-
-        # TODO: Koita kun sma kulmakerroin muuttuu riittävästi.
         
         #sma muuttaa suuntaa
         sma_muuttuu_nousevaksi = self.sma[0] > self.sma[-1] and self.sma[-1] <= self.sma[-2]
+        if (sma_muuttuu_nousevaksi):
+            print("SMA nousee")
+            print(self.laske_kulmakerroin(self.sma[0], self.sma[-1]))
+            print(self.sma[0], self.sma[-1], self.sma[-2])
         sma_muuttuu_laskevaksi = self.sma[0] < self.sma[-1] and self.sma[-1] >= self.sma[-2]
 
         # Positio tarkoittaa, että meillä on osakkeita hallussa
@@ -128,16 +134,15 @@ if __name__ == '__main__':
         cerebro.broker.setcommission(commission=commission)
         # Komissio + prosentti = kokonaiskulu. Jos menee yli 100% niin ei ole rahaa ostaa.
 
-        cerebro.addstrategy(TestStrategy, maperiod=period, printlog=True)
+        cerebro.addstrategy(TestStrategy, maperiod=period, printlog=False)
         cerebro.run()
 
         # Eli haluan tietää lopullisen arvon suhteessa alkupääomaan.
         voitto_ratio = ((cerebro.broker.getvalue() / aloitus_rahat) - 1) * 100
         result_list.append((period, voitto_ratio, cerebro.broker.getvalue(),cerebro.runstrats[0][0].sellcount, cerebro.runstrats[0][0].buycount))
         # Plot the result
-        #cerebro.plot()
+        cerebro.plot()
         # Create a Cerebro entity
         # Create a Data Feed
-
     par_df = pd.DataFrame(result_list, columns = ['maperiod', 'return', 'rahaa','sellcount', 'buycount'])
     print(par_df)

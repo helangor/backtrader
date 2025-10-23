@@ -5,6 +5,14 @@ import pandas as pd
 import os
 import os.path 
 import backtrader.analyzers as btanalyzers
+from enum import Enum
+
+
+class Suunta(Enum):
+    NOUSU = "nousu"
+    LASKU = "lasku"
+    MUUTTUMATON = "muuttumaton"
+
 
 class TestStrategy(bt.Strategy):
     params = (
@@ -66,29 +74,39 @@ class TestStrategy(bt.Strategy):
         if not trade.isclosed:
             return
         
-    def laske_kulmakerroin(self, p1, p2):
-        # TODO: tarkista mikä olisi riittävän korkea kulmakerroin
-        return (p2/p1)
+    def get_suunnanmuutos(self, sma):
+        suunta_nyt = self.get_suunta(sma[0], sma[-5])
+        suunta_aikaisemmin = self.get_suunta(sma[-5], sma[-10])
+        if suunta_nyt != suunta_aikaisemmin:
+            return suunta_nyt
+        return Suunta.MUUTTUMATON
+
+    def get_suunta(self, arvo_nyt, arvo_aikaisemmin):
+        muutos_prosenteissa = (arvo_nyt/arvo_aikaisemmin) * 100
+        prosentti_raja = 0.08  # Valitaan sopiva kynnysarvo
+        if muutos_prosenteissa > 100 + prosentti_raja:
+            return Suunta.NOUSU
+        elif muutos_prosenteissa < 100 - prosentti_raja:
+            return Suunta.LASKU
+        else:
+            return Suunta.MUUTTUMATON
+        
+    def laske_kulmakerroin(self, arvo_nyt, arvo_eilen):
+        return (arvo_nyt - arvo_eilen) / 1
 
     def next(self):
         # Check if an order is pending ... if yes, we cannot send a 2nd one
         if self.order:
             return
-        
-        #sma muuttaa suuntaa
-        sma_muuttuu_nousevaksi = self.sma[0] > self.sma[-1] and self.sma[-1] <= self.sma[-2]
-        if (sma_muuttuu_nousevaksi):
-            print("SMA nousee")
-            print(self.laske_kulmakerroin(self.sma[0], self.sma[-1]))
-            print(self.sma[0], self.sma[-1], self.sma[-2])
-        sma_muuttuu_laskevaksi = self.sma[0] < self.sma[-1] and self.sma[-1] >= self.sma[-2]
+
+        suunta = self.get_suunnanmuutos(self.sma)
 
         # Positio tarkoittaa, että meillä on osakkeita hallussa
         if not self.position:
-            if sma_muuttuu_nousevaksi:
+            if suunta == Suunta.NOUSU:
                 self.order = self.buy()
         if self.position:
-            if sma_muuttuu_laskevaksi:
+            if suunta == Suunta.LASKU:
                 self.order = self.sell()
 
 class GetData:
@@ -116,7 +134,7 @@ if __name__ == '__main__':
     data_loader = GetData('BTC-USD', '2022-01-01', '1d')
     df = data_loader.load()
     aloitus_rahat = 10000
-    maperiods = [200]
+    maperiods = [150]
     sizer = 98
     commission = 0.02
     result_list = []

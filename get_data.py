@@ -8,7 +8,9 @@ class GetData:
         self.ticker = ticker
         self.start = start
         self.interval = interval
-        self.csv_file = f'{ticker}.csv'
+        self.data_folder = 'datas'
+        os.makedirs(self.data_folder, exist_ok=True)
+        self.csv_file = os.path.join(self.data_folder, f'{ticker}.csv')
 
     def load(self):
         if os.path.exists(self.csv_file):

@@ -2,13 +2,11 @@ from __future__ import (absolute_import, division, print_function,unicode_litera
 import backtrader as bt
 import pandas as pd
 import backtrader.analyzers as btanalyzers
+from CerebroManager import CerebroManager
 from get_data import GetData
-from strategiat.BaseClasses import StrategyManager
-from strategiat.SingleBuyInterfaceTesti import SingleBuyStrategy
+from strategiat.SingleBuy import SingleBuy
 from strategiat.sma_cross import SMACross
 
-def calculate_return(initial_cash, final_cash):
-    return ((final_cash / initial_cash) - 1) * 100
 
 if __name__ == '__main__':
     
@@ -18,6 +16,7 @@ if __name__ == '__main__':
     aloitus_rahat = 10000
     sizer = 98
     commission = 0.02
+    strategy_manager = CerebroManager(df, aloitus_rahat, sizer, commission)
     result_list = []
 
     # Strategia jossa käydään läpi eri pituuksia nopealle ja hitaalle liukuvalle keskiarvolle
@@ -39,11 +38,7 @@ if __name__ == '__main__':
                 final_value = cerebro.broker.getvalue()
                 result_list.append((f"{psfast}/{pslow}", calculate_return(aloitus_rahat, final_value), final_value, cerebro.runstrats[0][0].sellcount, cerebro.runstrats[0][0].buycount))
 """
-    # TODO: Tässä vain kerron luokan 
-    strategy_manager = StrategyManager.StrategyManager(df, aloitus_rahat, sizer, commission)
-    final_value, sell_count, buy_count = strategy_manager.run(SingleBuyStrategy)
-    result_list.append(('SingleBuy', calculate_return(aloitus_rahat, final_value), final_value, sell_count, buy_count))
-    
+    result_list.append(strategy_manager.run(SingleBuy))
     
     #cerebro.plot()
 

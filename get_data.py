@@ -17,8 +17,10 @@ class GetData:
             df = pd.read_csv(self.csv_file, index_col=0, parse_dates=True)
         else:
             df = yf.download(self.ticker, start=self.start, interval=self.interval)
+            if df.empty:
+                raise ValueError(f"No data found for ticker '{self.ticker}'")
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.droplevel(1)
-            df.index = df.index.tz_localize(None)
+            df.index = df.index.tz_localize(None)           
             df.to_csv(self.csv_file)
         return df

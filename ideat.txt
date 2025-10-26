@@ -1,0 +1,14 @@
+
+Kryptot
+ - Klusterisoi tietynlaisia kryptoja. Eli aluksi ne missä kova arvon nousu. 
+ - Sitten ne järjestetään market capin ja volumen mukaan.
+ - Pitää ottaa huomioon välityspalkkio. Voi olla iso pienillä kolikoilla.
+
+
+ Osakkeet
+  - Etsi korkean volatiliteetin osakkeita ja koita näihin saada joku hyvä strategia
+
+ Kempower
+  - Pitäisi saada kiinni nopea lasku. 
+  - Eli lasketaan riskitasoa ja jos on täysin yliarvostettu niin pitää varautua nopeaan laskuun. 
+   - Käytetään myös jotain Volumen huomioon ottavaa strategiaa mukana

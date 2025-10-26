@@ -32,3 +32,6 @@ class CerebroManager:
         result_list.append(
             [strategy_name, calculate_return(self.aloitus_rahat, final_value), final_value, sell_count, buy_count]
         )
+        
+    def plot (self):
+        self.cerebro.plot()

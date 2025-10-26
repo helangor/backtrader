@@ -1,6 +1,6 @@
 {
-    "ticker": "BRK-B",
-    "start_date": "2010-10-01",
+    "ticker": "KEMPOWR.HE",
+    "start_date": "2021-12-01",
     "interval": "1d",
     "starting_cash": 10000,
     "sizer": 98,

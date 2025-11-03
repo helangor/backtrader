@@ -1,6 +1,21 @@
 import backtrader as bt
+from CerebroManager import CerebroManager
 from strategiat.BaseStrategy import BaseStrategy
 
+
+def SMACrossLoop():
+    result_list = []
+    pslows = [40]
+    psfasts = [10, 12]
+    iteration_count = 0
+    total_iterations = len(psfasts) * len(pslows)
+    for psfast in psfasts:
+        for pslow in pslows:
+            iteration_count += 1
+            print(f"Running iteration {iteration_count} of {total_iterations}")
+            cerebro = CerebroManager()
+            cerebro.run(SMACross, f'SMACross: {psfast}/{pslow}', result_list, pfast=psfast, pslow=pslow)
+            
 class SMACross(BaseStrategy):
     params = dict(
         pfast=10,  # period for the fast moving average

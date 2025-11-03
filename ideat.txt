@@ -1,14 +1,18 @@
-
-Kryptot
- - Klusterisoi tietynlaisia kryptoja. Eli aluksi ne missä kova arvon nousu. 
- - Sitten ne järjestetään market capin ja volumen mukaan.
- - Pitää ottaa huomioon välityspalkkio. Voi olla iso pienillä kolikoilla.
+Mahdollisen nousun pisteytys
+ - Koita etsiä strategia, joka tutkii milloin osake voisi olla hyvässä nousussa.
+ - Sitten tarkkaillaan kaikkia näitä ja aina myydään ja ostetaan sitä millä suurin potentiaali tähän. 
 
 
  Osakkeet
   - Etsi korkean volatiliteetin osakkeita ja koita näihin saada joku hyvä strategia
 
  Kempower
-  - Pitäisi saada kiinni nopea lasku. 
+  - Pitäisi saada kiinni nopea lasku tai nousu. RSI? 
   - Eli lasketaan riskitasoa ja jos on täysin yliarvostettu niin pitää varautua nopeaan laskuun. 
    - Käytetään myös jotain Volumen huomioon ottavaa strategiaa mukana
+
+
+Kryptot
+ - Klusterisoi tietynlaisia kryptoja. Eli aluksi ne missä kova arvon nousu. 
+ - Sitten ne järjestetään market capin ja volumen mukaan.
+ - Pitää ottaa huomioon välityspalkkio. Voi olla iso pienillä kolikoilla.
